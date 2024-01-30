@@ -1,0 +1,68 @@
+// Adjust the output jar name here
+archivesBaseName = "${mod_name}-Forge-${minecraft_version}"
+
+dependencies {
+	// Add your dependencies here
+
+	// Unimixins. Can be removed if not needed
+	modImplementation("com.github.LegacyModdingMC.UniMixins:unimixins-all-1.7.10:"+project.unimixins_version+":dev")
+	modImplementation("appeng:appliedenergistics2:rv3-beta-6:dev")
+	modImplementation("cofh:CoFHLib:1.7.10R3.0.3:dev")
+	modImplementation("com.bluepowermod:BluePower:1.7.10-0.2.963:deobf")
+	modImplementation("com.github.GTNewHorizons:EnderIO:2.6.4:dev"){ transitive = false }
+	modImplementation("com.github.GTNewHorizons:ExtraCells2:2.5.34:dev"){ transitive = false }
+	//modImplementation("com.mod-buildcraft:buildcraft:7.1.23:dev")
+	//modImplementation("ic2:IC2Classic:1.2.1.8:dev")
+	modImplementation("mekanism:MekanismAll:1.7.10-9.1.1.283:dev")
+	modImplementation("micdoodle8.mods:Galacticraft-Planets:1.7-3.0.12.504:Dev")
+	modImplementation("micdoodle8.mods:GalacticraftCore:1.7-3.0.12.504:Dev")
+	modImplementation("micdoodle8.mods:MicdoodleCore:1.7-3.0.12.504:Dev")
+	modImplementation("mods.railcraft:Railcraft_1.7.10:9.12.3.0:dev")
+	modImplementation("mrtjp:ProjectRed:1.7.10-4.7.0pre11.52:dev")
+	modImplementation("net.machinemuse:Numina:0.4.1.105")
+	modImplementation("net.sengir.forestry:forestry_1.7.10:4.2.16.64:dev")
+	modImplementation("powercrystals:MineFactoryReloaded:[1.7.10]2.8.2B1-201:dev")
+	modImplementation("thaumcraft:Thaumcraft:1.7.10-4.2.3.5:dev")
+	// Do not edit or remove
+	implementation project(":Common")
+}
+
+// Maven Publishing. Remove if not needed
+publishing {
+	publications {
+		mavenJava(MavenPublication) {
+			artifactId base.archivesName.get()
+			from components.java
+		}
+	}
+	repositories {
+		// Add your maven repository here
+		maven {
+			url "file://" + System.getenv("local_maven")
+		}
+	}
+}
+
+/**
+ * ===============================================================================
+ * =       DO NOT EDIT BELOW THIS LINE UNLESS YOU KNOW WHAT YOU ARE DOING        =
+ * ===============================================================================
+ */
+
+unimined.minecraft {
+	minecraftForge {
+		loader forge_version+"-"+minecraft_version
+	}
+
+	defaultRemapJar = true
+}
+
+processResources {
+	from project(":Common").sourceSets.main.resources
+}
+
+compileTestJava.enabled = false
+
+tasks.withType(JavaCompile).configureEach {
+	source(project(":Common").sourceSets.main.allSource)
+}

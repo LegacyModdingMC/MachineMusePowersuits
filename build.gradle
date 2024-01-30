@@ -1,204 +1,202 @@
-buildscript {
-    repositories {
-        mavenCentral()
-        maven {
-            name = "forge"
-            url = "http://files.minecraftforge.net/maven"
-        }
-        maven {
-            name = "sonatype"
-            url = "https://oss.sonatype.org/content/repositories/snapshots/"
-        }
-    }
-    dependencies {
-        classpath 'net.minecraftforge.gradle:ForgeGradle:1.2-SNAPSHOT'
-    }
+plugins {
+	id 'java'
+	id "xyz.wagyourtail.unimined" version "1.2.0-SNAPSHOT" apply false
+	id "com.diffplug.spotless" version "6.13.0"
+	id "com.github.spotbugs" version "6.0.4"
 }
 
-repositories {
-    maven {
-        name = "ChickenBones"
-        url = "http://chickenbones.net/maven"
-    }
-}
+// Edit in gradle.properties
+group = project_group
+version = "${version_major}.${version_minor}.${version_patch}"
 
-apply plugin: 'forge'
-apply plugin: 'curseforge'
+subprojects {
+	apply plugin: "xyz.wagyourtail.unimined"
+	apply plugin: "com.diffplug.spotless"
+	apply plugin: "com.github.spotbugs"
+	apply plugin: "java"
+	apply plugin: 'maven-publish'
 
-sourceCompatibility = 1.7
-targetCompatibility = 1.7
+	group = rootProject.group
+	version = rootProject.version
 
-// define the properties file
-ext.configFile = file "project.properties"
+	sourceCompatibility = JavaVersion.VERSION_1_8
+	targetCompatibility = JavaVersion.VERSION_1_8
 
-configFile.withReader {
-    // read config.  it shall from now on be referenced as simply config or as project.config
-    def prop = new Properties()
-    prop.load(it)
-    project.ext.config = new ConfigSlurper().parse prop
-}
+	// Add your maven repositories here
+	repositories {
+		mavenCentral()
 
-def buildnumber = System.getenv("BUILD_NUMBER")
-def travisbuildnumber = (System.getenv("TRAVIS_BUILD_NUMBER") ?: -111).toInteger() + 111
-version = "${config.minecraft_version}-${config.mod_version}." + (buildnumber ?: travisbuildnumber)
-group= "${config.group_id}" // http://maven.apache.org/guides/mini/guide-naming-conventions.html
-archivesBaseName = "${config.mod_id}"
-def numina_version = (System.getenv("NUMINA_VERSION") ?:"0.4.1.105")
+		// First Dark Dev Maven. Can be removed
+		maven {
+			url "https://maven.firstdark.dev/releases"
+		}
 
-minecraft {
-    version = "${config.minecraft_version}-${config.forge_version}"
-    replace "@numina_version@", numina_version
-    replace "@VERSION@", project.version
-    runDir = "run"
-}
+		// First Dark Dev Mirror maven. Do not remove.
+		// It's required by this project to pull in dependencies for the modloaders
+		maven {
+			url "https://mcentral.firstdark.dev/releases"
+		}
 
-new File(config.libs_dir).mkdirs()
-def getLibrary(filename) {
-    def f = new File(config.libs_dir + filename)
-    if (!f.exists()) {
-        new URL(config.apisource_url + filename).withInputStream{ i -> f.withOutputStream{ it << i }}
-    }
-    dependencies {
-        compile files(config.libs_dir + filename)
-    }
-}
+		exclusiveContent {
+			forRepository {
+				maven {
+					name = "Modrinth"
+					url = "https://api.modrinth.com/maven"
+				}
+			}
+			filter {
+				includeGroup "maven.modrinth"
+			}
+		}
 
-dependencies {
-    compile 'codechicken:CodeChickenCore:1.7.10-1.0.7.47:dev'
-    compile 'codechicken:NotEnoughItems:1.7.10-1.0.5.120:dev'
-    compile 'codechicken:CodeChickenLib:1.7.10-1.1.3.140:dev'
-}
-
-
-
-/*
-repositories {
-	maven {
-		name = "ic2"
-		url = "http://maven.ic2.player.to/"
+		maven {
+			name = "wagyourtail releases"
+			url = "https://maven.wagyourtail.xyz/releases"
+		}
+		maven {
+			name = 'sponge'
+			url = 'https://repo.spongepowered.org/maven/'
+		}
+		maven {
+			name = 'overminddl1'
+			url = 'https://gregtech.overminddl1.com/'
+			content {
+				excludeGroupByRegex "de.oceanlabs.mcp"
+			}
+		}
+		maven {
+			name = "GTNH Maven"
+			url = "https://nexus.gtnewhorizons.com/repository/releases/"
+		}
+		maven {
+			url = "https://jitpack.io"
+		}
 	}
-}
 
-dependencies {
-	compile 'net.industrial-craft:industrialcraft-2:2.2.826-experimental:api'
-}
+	dependencies {
+		annotationProcessor "com.github.bsideup.jabel:jabel-javac-plugin:${jabel_version}"
+		compileOnly "com.github.bsideup.jabel:jabel-javac-plugin:${jabel_version}"
 
+		compileOnly "org.projectlombok:lombok:${lombok_version}"
+		annotationProcessor "org.projectlombok:lombok:${lombok_version}"
 
-*/
+		testCompileOnly "org.projectlombok:lombok:${lombok_version}"
+		testAnnotationProcessor "org.projectlombok:lombok:${lombok_version}"
 
+		spotbugsPlugins 'com.h3xstream.findsecbugs:findsecbugs-plugin:1.12.0'
+		spotbugs 'com.github.spotbugs:spotbugs:4.8.3'
+	}
 
-//getLibrary("CoFHCore-[1.7.10]3.0.3-303-dev.jar")
-////getLibrary("industrialcraft-2-2.2.765-experimental-api.jar")
-//getLibrary("ThermalExpansion-[1.7.10]4.0.3B1-218-dev.jar")
-//getLibrary("GalacticraftCore-Dev-1.7-3.0.12.168.jar")
-//getLibrary("Railcraft_1.7.10-9.7.0.0-dev.jar") // delete outdated CoFH API from this jar to run in dev environment
-//getLibrary("MineFactoryReloaded-[1.7.10]2.8.0-104-dev.jar")
-//getLibrary("forestry_1.7.10-3.6.3.20-api.jar")
-//getLibrary("Thaumcraft-deobf-1.7.10-4.2.3.5.jar")
-//getLibrary("SmartRender-1.7.10-2.1.jar") // this version is ok to build with, but to run in dev environment, download the SmartMoving zip and use the version from that
-//getLibrary("RenderPlayerAPI-1.7.10-1.4.jar")
-////getLibrary("appliedenergistics2-rv2-stable-10-dev.jar")
-//getLibrary("ExtraCells-deobf-1.7.10-2.3.2b158.jar") // This one may have to be downloaded manually
-//getLibrary("buildcraft-7.0.21-dev.jar")
-//getLibrary("BluePower-1.7.10-0.2.962-universal.jar")
-//getLibrary("EnderIO-1.7.10-2.2.8.381-dev.jar") // May need to delete Mekanism API from this jar to run in dev environment
-//getLibrary("Mekanism-1.7.10-8.1.7.252.jar")
-//getLibrary("MrTJPCore-1.1.0.31-universal.jar")
-//getLibrary("ProjectRed-1.7.10-4.7.0pre8.92-Base.jar")
-////getLibrary("Chisel2-2.5.0.43-deobf.jar")
-////getLibrary("Chisel-2.9.0.3-deobf.jar")
-//getLibrary("compactmachines-1.7.10-1.20-dev.jar") // This is for the personal shrinking device module; needs to be built from source.
+	jar {
+		manifest {
+			attributes([
+					'Specification-Title'     : project.archivesBaseName,
+					'Specification-Vendor'    : mod_author,
+					'Specification-Version'   : project.version,
+					'Implementation-Title'    : project.name,
+					'Implementation-Version'  : project.version,
+					'Implementation-Vendor'   : mod_author,
+					'Implementation-Timestamp': new Date().format("yyyy-MM-dd'T'HH:mm:ssZ"),
+					'Timestamp'               : System.currentTimeMillis(),
+					'Built-On-Java'           : "${System.getProperty('java.vm.version')} (${System.getProperty('java.vm.vendor')})",
+					'Built-On-Minecraft'	  : minecraft_version,
+					"MixinConfigs"            : mixin_config,
+					"TweakClass"              : "org.spongepowered.asm.launch.MixinTweaker"
+			])
+		}
+	}
 
-processResources {
-    // this will ensure that this task is redone when the versions change.
-    inputs.property "version", project.version
-    inputs.property "mcversion", project.minecraft.version
+	spotless {
+		format 'misc', {
+			// define the files to apply `misc` to
+			target '*.gradle', '.gitattributes', '.gitignore'
 
-    // replace stuff in mcmod.info, nothing else
-    from(sourceSets.main.resources.srcDirs) {
-        include 'mcmod.info'
+			// define the steps to apply to those files
+			trimTrailingWhitespace()
+			indentWithTabs() // or spaces. Takes an integer argument if you don't like 4
+			endWithNewline()
+		}
+		java {
+			// fix formatting of type annotations
+			formatAnnotations()
+			trimTrailingWhitespace()
+			indentWithTabs() // or spaces. Takes an integer argument if you don't like 4
+			endWithNewline()
+			// make sure every file has the following copyright header.
+			// optionally, Spotless can set copyright years by digging
+			// through git history (see "license" section below)
+			//licenseHeader '/* (C)$YEAR */'
+		}
+	}
 
-        // replace version and mcversion
-        expand 'version':project.version, 'mcversion':project.minecraft.version
-    }
+	/**
+	 * ===============================================================================
+	 * =       DO NOT EDIT BELOW THIS LINE UNLESS YOU KNOW WHAT YOU ARE DOING        =
+	 * ===============================================================================
+	 */
 
-    // copy everything else, thats not the mcmod.info
-    from(sourceSets.main.resources.srcDirs) {
-        exclude 'mcmod.info'
-    }
-}
+	unimined.minecraft(sourceSets.main, true) {
+		version minecraft_version
 
-jar {
-    manifest {
-        attributes 'FMLAT': 'numina_at.cfg'
-    }
-}
+		mappings {
+			searge()
+			mcp("stable", "12-1.7.10")
+			//mcp("stable", "39-1.12")
+			//legacyIntermediary()
+			//mapping("net.legacyfabric:yarn:${project.minecraft_version}+build.mcp:v2")
+			//legacyYarn("533")
+		}
+	}
 
-task devJar(type: Jar) {
-    from sourceSets.main.output
-    classifier = 'dev'
-}
+	tasks.withType(JavaCompile).configureEach {
+		if (it.name in ["compileMcLauncherJava", "compilePatchedMcJava"]) {
+			return
+		}
 
-task copyToLib(type: Copy) {
-    into "$buildDir/libs"
-    from(sourceSets.main.resources.srcDirs){
-        include 'mps-vanilla.recipes'
-        include 'mps-thermalexpansion.recipes'
-        include 'mps-ic2.recipes'
-        include 'mps-enderio.recipes'
-    }
-}
+		it.options.encoding = "UTF-8"
 
-def getGitChangelog = { ->
-    try {
-        def stdout = new ByteArrayOutputStream()
-        def gitHash = System.getenv("GIT_COMMIT")
-        def gitPrevHash = System.getenv("GIT_PREVIOUS_COMMIT")
-        if(gitHash && gitPrevHash) {
-            exec {
-                commandLine 'git', 'log', '--pretty=tformat:%s - %aN', '' + gitPrevHash + '...' + gitHash
-                standardOutput = stdout
-            }
-            return stdout.toString().trim()
-        } else {
-            return "";
-        }
-    } catch(ignored) {
-        return "";
-    }
-}
+		it.sourceCompatibility = 17 // for the IDE support
+		it.options.release = 8
 
+		it.javaCompiler = javaToolchains.compilerFor {
+			languageVersion = JavaLanguageVersion.of(17)
+		}
+	}
 
-build.dependsOn(copyToLib)
+	tasks.withType(GenerateModuleMetadata) {
+		enabled = false
+	}
 
-artifacts {
-    archives devJar
-}
+	clean {
+		delete "$rootDir/artifacts"
+	}
 
-curse {
-    projectId = '235442'
-    apiKey = project.hasProperty('curseForgeApiKey') ? project.curseForgeApiKey : ''
-    def branch = System.getenv("GIT_BRANCH")
-    if(branch == null) {
-        releaseType = 'alpha'
-    } else if(branch.equals("origin/experimental")) {
-        releaseType = 'beta'
-    } else if(branch.equals("origin/master")) {
-        releaseType = 'release'
-    } else {
-        releaseType = 'alpha'
-    }
+	if (project.name !== 'Common') {
+		tasks.register('delDevJar') {
+			doLast {
+				def tree = fileTree('build/libs')
+				tree.include '**/*-dev-shadow.jar'
+				tree.include '**/*-dev.jar'
+				tree.include '**/*-all.jar'
+				tree.include '**/*-slim.jar'
+				tree.each { it.delete() }
+			}
+		}
+		build.finalizedBy delDevJar
 
-    changelog = getGitChangelog()
+		tasks.register('copyAllArtifacts', Copy) {
+			from "$buildDir/libs"
+			into "$rootDir/artifacts"
+			include("*.jar")
+		}
 
-    addGameVersion '1.7.10'
+		build.finalizedBy(copyAllArtifacts)
+	}
 
-    relatedProject 'numina': 'requiredLibrary'
-}
-
-apply plugin: 'idea'
-idea {
-    module {
-        inheritOutputDirs = true
-    }
+	configurations {
+		 // Help Eclipse discover the compile classpath
+		 compileClasspath.extendsFrom(minecraft)
+		 compileClasspath.extendsFrom(minecraftLibraries)
+		 compileClasspath.extendsFrom(modImplementation)
+	}
 }
